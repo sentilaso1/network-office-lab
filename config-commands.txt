@@ -1,0 +1,74 @@
+==========================
+= CẤU HÌNH TRÊN SWITCH 3650 =
+==========================
+enable
+configure terminal
+
+! Tạo VLAN
+vlan 10
+ name IT
+exit
+vlan 20
+ name KETOAN
+exit
+vlan 30
+ name NHANSU
+exit
+
+interface range GigabitEthernet1/0/1 - GigabitEthernet1/0/2
+ switchport mode access
+ switchport access vlan 10
+ exit
+
+interface range GigabitEthernet1/0/3 - GigabitEthernet1/0/4
+ switchport mode access
+ switchport access vlan 20
+ exit
+
+interface range GigabitEthernet1/0/5 - GigabitEthernet1/0/6
+ switchport mode access
+ switchport access vlan 30
+ exit
+
+! Cấu hình trunk kết nối đến router
+interface gigabitEthernet1/0/7
+ switchport mode trunk
+exit
+
+! Lưu cấu hình
+end
+write memory
+
+
+==========================
+= CẤU HÌNH TRÊN ROUTER 2901 =
+==========================
+enable
+configure terminal
+
+! Sub-interface cho VLAN 10
+interface gigabitEthernet0/0.10
+ encapsulation dot1Q 10
+ ip address 192.168.10.1 255.255.255.0
+exit
+
+! Sub-interface cho VLAN 20
+interface gigabitEthernet0/0.20
+ encapsulation dot1Q 20
+ ip address 192.168.20.1 255.255.255.0
+exit
+
+! Sub-interface cho VLAN 30
+interface gigabitEthernet0/0.30
+ encapsulation dot1Q 30
+ ip address 192.168.30.1 255.255.255.0
+exit
+
+! Bật cổng chính
+interface gigabitEthernet0/0
+ no shutdown
+exit
+
+! Lưu cấu hình
+end
+write memory
