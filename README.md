@@ -1,37 +1,80 @@
-# 🏢 Office Network Simulation – Cisco Packet Tracer
+# Network VLAN Project with Router-on-a-Stick
 
-## 🔍 Mô tả dự án
-Dự án mô phỏng mạng nội bộ cho một văn phòng gồm 3 phòng ban: IT, Kế toán, và Nhân sự. Sử dụng Cisco Packet Tracer để thiết lập VLAN, DHCP, NAT và ACL.
+This project is a Packet Tracer simulation of a segmented network using VLANs and inter-VLAN routing via a Router-on-a-Stick model. It also includes DHCP, DNS, and ACL configurations for a more realistic enterprise setup.
 
-## 📐 Sơ đồ mạng
-![Sơ đồ mạng văn phòng](network-diagram.png)
+---
 
-## 📁 Cấu trúc mạng
-| Phòng ban   | VLAN | Mạng IP           | Gateway         |
-|-------------|------|-------------------|-----------------|
-| IT          | 10   | 192.168.10.0/24   | 192.168.10.1    |
-| Kế toán     | 20   | 192.168.20.0/24   | 192.168.20.1    |
-| Nhân sự     | 30   | 192.168.30.0/24   | 192.168.30.1    |
+## 📌 Features
 
-## 🧪 Tính năng triển khai
-- ✅ VLAN segmentation
-- ✅ DHCP cho từng VLAN
-- ✅ NAT để truy cập Internet
-- ✅ ACL chặn truy cập giữa các phòng
-- ✅ Giao tiếp nội bộ giữa cùng VLAN
+✅ VLAN segmentation (HR, IT, Guest)  
+✅ Inter-VLAN Routing using Router 2901  
+✅ DHCP Server (on Router) for IP auto-assignment  
+✅ DNS Server (internal) with domain name resolution  
+✅ ACL to restrict access from Guest VLAN to HR VLAN  
 
-## 🛠 Công cụ sử dụng
-- Cisco Packet Tracer
-- Markdown
-- draw.io
+---
 
-## 📦 File đính kèm
-- `packet-tracer.pkt`: Mô hình mạng Packet Tracer
-- `config-commands.txt`: Cấu hình Router và Switch
-- `report.pdf`: Báo cáo tổng hợp
+## 🧱 Network Topology
 
-## 📚 Hướng phát triển
-- Thêm hệ thống DNS nội bộ
-- Cấu hình firewall nâng cao
-- Kết nối chi nhánh khác bằng VPN
+- **Switch 3650** with VLANs 10 (HR), 20 (IT), 30 (Guest)
+- **Router 2901** configured with sub-interfaces (dot1Q)
+- **Internal Server**: Provides DNS service and hosts local site
+- **Clients (PCs)**: Assigned dynamically via DHCP
 
+📷 _See_ `/screenshots/` for Packet Tracer diagram and test results
+
+---
+
+## 🖧 IP Addressing Scheme
+
+| VLAN  | Subnet             | Gateway          | Role     |
+|-------|--------------------|------------------|----------|
+| HR    | 192.168.10.0/24    | 192.168.10.1     | Staff    |
+| IT    | 192.168.20.0/24    | 192.168.20.1     | Admin    |
+| Guest | 192.168.30.0/24    | 192.168.30.1     | Visitors |
+
+---
+
+## 🔐 ACL Policy
+
+- ACL 100: Deny access from VLAN 30 (Guest) to VLAN 10 (HR)
+```bash
+access-list 100 deny ip 192.168.30.0 0.0.0.255 192.168.10.0 0.0.0.255
+access-list 100 permit ip any any
+```
+
+---
+
+## 🧪 How to Test
+
+1. Open `packet-tracer.pkt` in Cisco Packet Tracer
+2. Power on all devices
+3. Check IP assigned via DHCP
+4. Try `ping intranet.local` from PC (DNS resolution)
+5. Try pinging from Guest VLAN to HR VLAN (should fail)
+
+---
+
+## 📁 Project Structure
+
+```
+network-vlan-router/
+├── config-commands.txt     # Full CLI configuration
+├── packet-tracer.pkt       # Packet Tracer simulation
+├── README.md               # Project overview
+├── report.pdf              # Report document
+└── screenshots/            # Captures of successful tests
+```
+
+---
+
+## ✅ Requirements
+
+- Cisco Packet Tracer (7.x or higher)
+- Basic understanding of VLANs, IP routing, DHCP, and ACLs
+
+---
+
+## 👨‍💻 Author
+
+Made with ❤️ by senti
