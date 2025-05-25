@@ -1,6 +1,6 @@
 # Network VLAN Project with Router-on-a-Stick
 
-This project is a Packet Tracer simulation of a segmented network using VLANs and inter-VLAN routing via a Router-on-a-Stick model. It also includes DHCP, DNS, and ACL configurations for a more realistic enterprise setup.
+This project is a Packet Tracer simulation of a segmented network using VLANs and inter-VLAN routing via a Router-on-a-Stick model. It includes DHCP, DNS, and ACL configurations for a realistic enterprise setup.
 
 ---
 
@@ -18,10 +18,12 @@ This project is a Packet Tracer simulation of a segmented network using VLANs an
 
 - **Switch 3650** with VLANs 10 (HR), 20 (IT), 30 (Guest)
 - **Router 2901** configured with sub-interfaces (dot1Q)
-- **Internal Server**: Provides DNS service and hosts local site
+- **Internal Server**: Provides DNS service and (optionally) hosts a local website
 - **Clients (PCs)**: Assigned dynamically via DHCP
 
 📷 _See_ `/screenshots/` for Packet Tracer diagram and test results
+
+**Note**: Switch ports in Packet Tracer may be labeled as `FastEthernet` or `GigabitEthernet` depending on the model. This project uses `GigabitEthernet` for Cisco 3650 compatibility.
 
 ---
 
@@ -52,7 +54,7 @@ access-list 100 permit ip any any
 3. Check IP assigned via DHCP
 4. Try `ping intranet.local` from PC (DNS resolution)
 5. Try pinging from Guest VLAN to HR VLAN (should fail)
-
+6. (Optional) Access intranet.local in a PC's web browser if HTTP is enabled on the server
 ---
 
 ## 📁 Project Structure
