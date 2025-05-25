@@ -1,74 +1,81 @@
-==========================
-= CẤU HÌNH TRÊN SWITCH 3650 =
-==========================
-enable
-configure terminal
-
-! Tạo VLAN
+! ================== SWITCH 3650 ==================
+conf t
+hostname SW1
 vlan 10
- name IT
-exit
+ name HR
 vlan 20
- name KETOAN
-exit
+ name IT
 vlan 30
- name NHANSU
-exit
-
-interface range GigabitEthernet1/0/1 - GigabitEthernet1/0/2
+ name Guest
+!
+interface range fa0/1 - 2
  switchport mode access
  switchport access vlan 10
- exit
-
-interface range GigabitEthernet1/0/3 - GigabitEthernet1/0/4
+!
+interface range fa0/3 - 4
  switchport mode access
  switchport access vlan 20
- exit
-
-interface range GigabitEthernet1/0/5 - GigabitEthernet1/0/6
+!
+interface range fa0/5 - 6
  switchport mode access
  switchport access vlan 30
- exit
-
-! Cấu hình trunk kết nối đến router
-interface gigabitEthernet1/0/7
+!
+interface gi1/0/7
  switchport mode trunk
+!
 exit
 
-! Lưu cấu hình
-end
-write memory
-
-
-==========================
-= CẤU HÌNH TRÊN ROUTER 2901 =
-==========================
-enable
-configure terminal
-
-! Sub-interface cho VLAN 10
-interface gigabitEthernet0/0.10
+! ================== ROUTER 2901 ==================
+conf t
+hostname R1
+interface gi0/0.10
  encapsulation dot1Q 10
  ip address 192.168.10.1 255.255.255.0
-exit
-
-! Sub-interface cho VLAN 20
-interface gigabitEthernet0/0.20
+!
+interface gi0/0.20
  encapsulation dot1Q 20
  ip address 192.168.20.1 255.255.255.0
-exit
-
-! Sub-interface cho VLAN 30
-interface gigabitEthernet0/0.30
+!
+interface gi0/0.30
  encapsulation dot1Q 30
  ip address 192.168.30.1 255.255.255.0
-exit
-
-! Bật cổng chính
-interface gigabitEthernet0/0
+!
+interface gi0/0
  no shutdown
+!
 exit
 
-! Lưu cấu hình
+! DHCP cấu hình trên Router cho từng VLAN
+ip dhcp pool VLAN10
+ network 192.168.10.0 255.255.255.0
+ default-router 192.168.10.1
+ dns-server 192.168.10.254
+!
+ip dhcp pool VLAN20
+ network 192.168.20.0 255.255.255.0
+ default-router 192.168.20.1
+ dns-server 192.168.20.254
+!
+ip dhcp pool VLAN30
+ network 192.168.30.0 255.255.255.0
+ default-router 192.168.30.1
+ dns-server 192.168.30.254
+!
+ip dhcp excluded-address 192.168.10.1 192.168.10.10
+ip dhcp excluded-address 192.168.20.1 192.168.20.10
+ip dhcp excluded-address 192.168.30.1 192.168.30.10
+
+! ACL: chặn VLAN30 truy cập VLAN10
+access-list 100 deny ip 192.168.30.0 0.0.0.255 192.168.10.0 0.0.0.255
+access-list 100 permit ip any any
+interface gi0/0.30
+ ip access-group 100 in
+!
 end
-write memory
+
+! ================== SERVER (CẤU HÌNH TRONG GIAO DIỆN GRAPHIC) ==================
+- IP tĩnh: 192.168.10.254 /24
+- Default Gateway: 192.168.10.1
+- Bật dịch vụ DNS
+- Thêm bản ghi:
+  + Tên miền: intranet.local → 192.168.10.254
