@@ -67,6 +67,21 @@ network-vlan-router/
 ├── report.pdf              # Report document
 └── screenshots/            # Captures of successful tests
 ```
+---
+
+## 🚀 Future Improvements
+
+To enhance this network setup in future iterations, consider the following developments:
+
+- **Add VLAN Security**: Implement `port-security` on switch ports to restrict MAC addresses, preventing unauthorized devices from connecting.
+- **DHCP Snooping**: Enable `ip dhcp snooping` to protect against rogue DHCP servers, especially for the Guest VLAN.
+- **Multiple Routers**: Introduce a second router for redundancy using protocols like HSRP or VRRP.
+- **External Connectivity**: Add a WAN link to simulate internet access, with NAT/PAT configuration on the router.
+- **Advanced ACLs**: Expand ACLs to include time-based restrictions or additional policies (e.g., block Guest VLAN from IT VLAN).
+- **Monitoring**: Integrate SNMP or syslog for network monitoring and logging.
+- **IPv6 Support**: Add IPv6 addressing and routing to support modern network requirements.
+- **Wireless Access**: Include a wireless access point for Guest VLAN to simulate a realistic guest network.
+- **Server Enhancements**: Configure a more robust web server (e.g., custom HTML page for `intranet.local`) or add additional services like FTP or email.
 
 ---
 
