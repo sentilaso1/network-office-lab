@@ -1,78 +1,632 @@
-! ================== SWITCH 3650 ==================
-enable
-configure terminal
-hostname SW1
-spanning-tree mode pvst
-vlan 10
- name HR
-vlan 20
- name IT
-vlan 30
- name Guest
-interface range GigabitEthernet1/0/1 - 2
- switchport mode access
- switchport access vlan 10
- description HR-PCs
-interface range GigabitEthernet1/0/3 - 4
- switchport mode access
- switchport access vlan 20
- description IT-PCs
-interface range GigabitEthernet1/0/5 - 6
- switchport mode access
- switchport access vlan 30
- description GUEST-PCs
-interface GigabitEthernet1/0/7
- switchport mode access
- switchport access vlan 10
- description SERVER-HR
-interface GigabitEthernet1/0/24
- switchport mode trunk
- description TRUNK-TO-ROUTER
-exit
-write memory
+# ================================================================================
+# ADVANCED VLAN LAB - ENTERPRISE NETWORK CONFIGURATION COMMANDS
+# ================================================================================
+# Topology: 3 Routers + 2 Switches + Servers + Wireless + Internet Connectivity
+# Features: HSRP, EtherChannel, Security, NAT, DHCP, DNS, Web Services
+# ================================================================================
 
-! ================== ROUTER 2901 ==================
+# ========================================
+# ISP-ROUTER CONFIGURATION (Router 2901)
+# ========================================
 enable
 configure terminal
-hostname R1
-ip routing
-interface GigabitEthernet0/0.10
- encapsulation dot1Q 10
- ip address 192.168.10.1 255.255.255.0
-interface GigabitEthernet0/0.20
- encapsulation dot1Q 20
- ip address 192.168.20.1 255.255.255.0
-interface GigabitEthernet0/0.30
- encapsulation dot1Q 30
- ip address 192.168.30.1 255.255.255.0
-interface GigabitEthernet0/0
+hostname ISP-Router
+
+# WAN Interface to Customer
+interface Serial0/0/0
+ ip address 203.0.113.1 255.255.255.252
+ clock rate 64000
+ description WAN-Link-to-Customer
  no shutdown
-ip dhcp pool VLAN10
- network 192.168.10.0 255.255.255.0
- default-router 192.168.10.1
- dns-server 192.168.10.254
-ip dhcp pool VLAN20
- network 192.168.20.0 255.255.255.0
- default-router 192.168.20.1
- dns-server 192.168.20.254
-ip dhcp pool VLAN30
- network 192.168.30.0 255.255.255.0
- default-router 192.168.30.1
- dns-server 192.168.30.254
-ip dhcp excluded-address 192.168.10.1 192.168.10.10
-ip dhcp excluded-address 192.168.20.1 192.168.20.10
-ip dhcp excluded-address 192.168.30.1 192.168.30.10
-access-list 100 deny ip 192.168.30.0 0.0.0.255 192.168.10.0 0.0.0.255
-access-list 100 permit ip any any
-interface GigabitEthernet0/0.30
- ip access-group 100 in
+
+# LAN Interface (Simulate Internet Services)
+interface GigabitEthernet0/0
+ ip address 8.8.8.1 255.255.255.0
+ description Internet-Services-LAN
+ no shutdown
+
+# Static Routes
+ip route 192.168.0.0 255.255.0.0 203.0.113.2
+ip route 0.0.0.0 0.0.0.0 GigabitEthernet0/0
+
+# Internet Services Simulation
+ip dhcp pool INTERNET
+ network 8.8.8.0 255.255.255.0
+ default-router 8.8.8.1
+
 end
 write memory
 
-! ================== SERVER (CẤU HÌNH TRONG GIAO DIỆN GRAPHIC) ==================
-- IP tĩnh: 192.168.10.254 /24
-- Default Gateway: 192.168.10.1
-- Bật dịch vụ DNS
-- Thêm bản ghi:
-  + Tên miền: intranet.local → 192.168.10.254
-- Bật dịch vụ HTTP nếu intranet.local là trang web
+# ========================================
+# R1 - PRIMARY ROUTER CONFIGURATION (Router 2901)
+# ========================================
+enable
+configure terminal
+hostname R1-Primary
+
+# Enable IP Routing
+ip routing
+
+# WAN Interface to ISP
+interface Serial0/0/0
+ ip address 203.0.113.2 255.255.255.252
+ description WAN-to-ISP
+ no shutdown
+
+# Trunk Interfaces
+interface GigabitEthernet0/0
+ description Trunk-to-SW1
+ no shutdown
+
+interface GigabitEthernet0/1  
+ description Trunk-to-SW2
+ no shutdown
+
+# VLAN Sub-interfaces with HSRP
+interface GigabitEthernet0/0.10
+ encapsulation dot1Q 10
+ ip address 192.168.10.2 255.255.255.0
+ standby version 2
+ standby 10 ip 192.168.10.1
+ standby 10 priority 110
+ standby 10 preempt
+ standby 10 authentication md5 key-string hsrp123
+
+interface GigabitEthernet0/0.20
+ encapsulation dot1Q 20
+ ip address 192.168.20.2 255.255.255.0
+ standby version 2
+ standby 20 ip 192.168.20.1
+ standby 20 priority 110
+ standby 20 preempt
+ standby 20 authentication md5 key-string hsrp123
+
+interface GigabitEthernet0/0.30
+ encapsulation dot1Q 30
+ ip address 192.168.30.2 255.255.255.0
+ standby version 2
+ standby 30 ip 192.168.30.1
+ standby 30 priority 110
+ standby 30 preempt
+ standby 30 authentication md5 key-string hsrp123
+
+interface GigabitEthernet0/0.99
+ encapsulation dot1Q 99
+ ip address 192.168.99.2 255.255.255.0
+ standby version 2
+ standby 99 ip 192.168.99.1
+ standby 99 priority 110
+ standby 99 preempt
+
+# Copy sub-interfaces to Gi0/1
+interface GigabitEthernet0/1.10
+ encapsulation dot1Q 10
+ ip address 192.168.10.2 255.255.255.0
+ standby version 2
+ standby 10 ip 192.168.10.1
+ standby 10 priority 110
+ standby 10 preempt
+
+interface GigabitEthernet0/1.20
+ encapsulation dot1Q 20
+ ip address 192.168.20.2 255.255.255.0
+ standby version 2
+ standby 20 ip 192.168.20.1
+ standby 20 priority 110
+ standby 20 preempt
+
+interface GigabitEthernet0/1.30
+ encapsulation dot1Q 30
+ ip address 192.168.30.2 255.255.255.0
+ standby version 2
+ standby 30 ip 192.168.30.1
+ standby 30 priority 110
+ standby 30 preempt
+
+interface GigabitEthernet0/1.99
+ encapsulation dot1Q 99
+ ip address 192.168.99.2 255.255.255.0
+ standby version 2
+ standby 99 ip 192.168.99.1
+ standby 99 priority 110
+ standby 99 preempt
+
+# DHCP Pools
+ip dhcp pool VLAN10-HR
+ network 192.168.10.0 255.255.255.0
+ default-router 192.168.10.1
+ dns-server 192.168.10.254 8.8.8.1
+
+ip dhcp pool VLAN20-IT
+ network 192.168.20.0 255.255.255.0
+ default-router 192.168.20.1
+ dns-server 192.168.20.254 8.8.8.1
+
+ip dhcp pool VLAN30-GUEST
+ network 192.168.30.0 255.255.255.0
+ default-router 192.168.30.1
+ dns-server 8.8.8.1
+
+ip dhcp pool VLAN99-MGMT
+ network 192.168.99.0 255.255.255.0
+ default-router 192.168.99.1
+ dns-server 8.8.8.1
+
+# DHCP Exclusions
+ip dhcp excluded-address 192.168.10.1 192.168.10.10
+ip dhcp excluded-address 192.168.20.1 192.168.20.10
+ip dhcp excluded-address 192.168.30.1 192.168.30.10
+ip dhcp excluded-address 192.168.99.1 192.168.99.10
+
+# Access Control Lists
+access-list 100 remark Block-Guest-to-HR
+access-list 100 deny ip 192.168.30.0 0.0.0.255 192.168.10.0 0.0.0.255
+access-list 100 deny ip 192.168.30.0 0.0.0.255 192.168.20.0 0.0.0.255
+access-list 100 permit ip any any
+
+# Apply ACL to Guest VLAN
+interface GigabitEthernet0/0.30
+ ip access-group 100 in
+interface GigabitEthernet0/1.30
+ ip access-group 100 in
+
+# NAT Configuration
+ip nat inside source list NAT_INSIDE interface Serial0/0/0 overload
+
+ip access-list standard NAT_INSIDE
+ permit 192.168.10.0 0.0.0.255
+ permit 192.168.20.0 0.0.0.255
+ permit 192.168.30.0 0.0.0.255
+
+# NAT Interfaces
+interface GigabitEthernet0/0.10
+ ip nat inside
+interface GigabitEthernet0/0.20
+ ip nat inside
+interface GigabitEthernet0/0.30
+ ip nat inside
+interface GigabitEthernet0/1.10
+ ip nat inside
+interface GigabitEthernet0/1.20
+ ip nat inside
+interface GigabitEthernet0/1.30
+ ip nat inside
+interface Serial0/0/0
+ ip nat outside
+
+# Default Route
+ip route 0.0.0.0 0.0.0.0 203.0.113.1
+
+# SNMP Configuration
+snmp-server community public RO
+snmp-server community private RW
+snmp-server location "Main-Datacenter-R1"
+snmp-server contact "Network-Admin"
+
+# NTP Configuration
+ntp server 8.8.8.1
+
+# Logging
+logging 192.168.99.100
+logging trap informational
+
+end
+write memory
+
+# ========================================
+# R2 - BACKUP ROUTER CONFIGURATION (Router 2901)
+# ========================================
+enable
+configure terminal
+hostname R2-Backup
+
+ip routing
+
+# Trunk Interfaces
+interface GigabitEthernet0/0
+ description Trunk-to-SW1
+ no shutdown
+
+interface GigabitEthernet0/1
+ description Trunk-to-SW2  
+ no shutdown
+
+# VLAN Sub-interfaces with HSRP (Lower Priority)
+interface GigabitEthernet0/0.10
+ encapsulation dot1Q 10
+ ip address 192.168.10.3 255.255.255.0
+ standby version 2
+ standby 10 ip 192.168.10.1
+ standby 10 priority 100
+ standby 10 authentication md5 key-string hsrp123
+
+interface GigabitEthernet0/0.20
+ encapsulation dot1Q 20
+ ip address 192.168.20.3 255.255.255.0
+ standby version 2
+ standby 20 ip 192.168.20.1
+ standby 20 priority 100
+ standby 20 authentication md5 key-string hsrp123
+
+interface GigabitEthernet0/0.30
+ encapsulation dot1Q 30
+ ip address 192.168.30.3 255.255.255.0
+ standby version 2
+ standby 30 ip 192.168.30.1
+ standby 30 priority 100
+ standby 30 authentication md5 key-string hsrp123
+
+interface GigabitEthernet0/0.99
+ encapsulation dot1Q 99
+ ip address 192.168.99.3 255.255.255.0
+ standby version 2
+ standby 99 ip 192.168.99.1
+ standby 99 priority 100
+
+# Copy to Gi0/1
+interface GigabitEthernet0/1.10
+ encapsulation dot1Q 10
+ ip address 192.168.10.3 255.255.255.0
+ standby version 2
+ standby 10 ip 192.168.10.1
+ standby 10 priority 100
+
+interface GigabitEthernet0/1.20
+ encapsulation dot1Q 20
+ ip address 192.168.20.3 255.255.255.0
+ standby version 2
+ standby 20 ip 192.168.20.1
+ standby 20 priority 100
+
+interface GigabitEthernet0/1.30
+ encapsulation dot1Q 30
+ ip address 192.168.30.3 255.255.255.0
+ standby version 2
+ standby 30 ip 192.168.30.1
+ standby 30 priority 100
+
+interface GigabitEthernet0/1.99
+ encapsulation dot1Q 99
+ ip address 192.168.99.3 255.255.255.0
+ standby version 2
+ standby 99 ip 192.168.99.1
+ standby 99 priority 100
+
+# Same ACLs as R1
+access-list 100 remark Block-Guest-to-HR-IT
+access-list 100 deny ip 192.168.30.0 0.0.0.255 192.168.10.0 0.0.0.255
+access-list 100 deny ip 192.168.30.0 0.0.0.255 192.168.20.0 0.0.0.255
+access-list 100 permit ip any any
+
+interface GigabitEthernet0/0.30
+ ip access-group 100 in
+interface GigabitEthernet0/1.30
+ ip access-group 100 in
+
+# SNMP & NTP
+snmp-server community public RO
+snmp-server location "Main-Datacenter-R2"
+ntp server 8.8.8.1
+
+end
+write memory
+
+# ========================================
+# SW1 - PRIMARY SWITCH CONFIGURATION (Switch 3650)
+# ========================================
+enable
+configure terminal
+hostname SW1-Primary
+
+# Enable advanced features
+ip routing
+spanning-tree mode rapid-pvst
+
+# VLANs Creation
+vlan 10
+ name HR-Department
+vlan 20
+ name IT-Department
+vlan 30
+ name Guest-Network
+vlan 99
+ name Management
+
+# Management Interface
+interface Vlan99
+ ip address 192.168.99.10 255.255.255.0
+ no shutdown
+
+ip default-gateway 192.168.99.1
+
+# EtherChannel Configuration
+interface range GigabitEthernet1/0/1-2
+ description EtherChannel-to-SW2
+ switchport mode trunk
+ switchport trunk allowed vlan 10,20,30,99
+ channel-group 1 mode active
+
+interface port-channel 1
+ description EtherChannel-to-SW2
+ switchport mode trunk
+ switchport trunk allowed vlan 10,20,30,99
+
+# Trunk Ports to Routers
+interface GigabitEthernet1/0/24
+ description Trunk-to-R1
+ switchport mode trunk
+ switchport trunk allowed vlan 10,20,30,99
+
+interface GigabitEthernet1/0/23
+ description Trunk-to-R2
+ switchport mode trunk
+ switchport trunk allowed vlan 10,20,30,99
+
+# Server Ports
+interface GigabitEthernet1/0/7
+ description DNS-Server
+ switchport mode access
+ switchport access vlan 10
+ spanning-tree portfast
+ switchport port-security
+ switchport port-security maximum 1
+ switchport port-security mac-address sticky
+ switchport port-security violation shutdown
+
+interface GigabitEthernet1/0/8
+ description Web-Server
+ switchport mode access
+ switchport access vlan 20
+ spanning-tree portfast
+ switchport port-security
+ switchport port-security maximum 1
+ switchport port-security mac-address sticky
+ switchport port-security violation shutdown
+
+# HR Department Ports
+interface range GigabitEthernet1/0/10-12
+ description HR-PCs
+ switchport mode access
+ switchport access vlan 10
+ spanning-tree portfast
+ switchport port-security
+ switchport port-security maximum 2
+ switchport port-security mac-address sticky
+ switchport port-security violation restrict
+
+# IT Department Ports  
+interface range GigabitEthernet1/0/15-17
+ description IT-PCs
+ switchport mode access
+ switchport access vlan 20
+ spanning-tree portfast
+ switchport port-security
+ switchport port-security maximum 2
+ switchport port-security mac-address sticky
+ switchport port-security violation restrict
+
+# Guest Network Ports
+interface range GigabitEthernet1/0/20-22
+ description Guest-Devices
+ switchport mode access
+ switchport access vlan 30
+ spanning-tree portfast
+ switchport port-security
+ switchport port-security maximum 3
+ switchport port-security mac-address sticky
+ switchport port-security violation restrict
+
+# Spanning Tree Configuration (Root Bridge)
+spanning-tree vlan 10,20,30,99 root primary
+
+# DHCP Snooping
+ip dhcp snooping
+ip dhcp snooping vlan 10,20,30
+interface range GigabitEthernet1/0/23-24
+ ip dhcp snooping trust
+interface port-channel 1
+ ip dhcp snooping trust
+
+# Dynamic ARP Inspection
+ip arp inspection vlan 10,20,30
+interface range GigabitEthernet1/0/23-24
+ ip arp inspection trust
+interface port-channel 1
+ ip arp inspection trust
+
+# IP Source Guard (on access ports)
+interface range GigabitEthernet1/0/10-22
+ ip verify source
+
+# SNMP Configuration
+snmp-server community public RO
+snmp-server community private RW
+snmp-server location "Main-Switch-SW1"
+snmp-server contact "Network-Admin"
+
+# NTP
+ntp server 192.168.99.1
+
+# Logging
+logging 192.168.99.100
+logging trap informational
+
+end
+write memory
+
+# ========================================
+# SW2 - SECONDARY SWITCH CONFIGURATION (Switch 3650)
+# ========================================
+enable
+configure terminal
+hostname SW2-Secondary
+
+ip routing
+spanning-tree mode rapid-pvst
+
+# VLANs (Same as SW1)
+vlan 10
+ name HR-Department
+vlan 20
+ name IT-Department  
+vlan 30
+ name Guest-Network
+vlan 99
+ name Management
+
+# Management Interface
+interface Vlan99
+ ip address 192.168.99.11 255.255.255.0
+ no shutdown
+
+ip default-gateway 192.168.99.1
+
+# EtherChannel Configuration
+interface range GigabitEthernet1/0/1-2
+ description EtherChannel-to-SW1
+ switchport mode trunk
+ switchport trunk allowed vlan 10,20,30,99
+ channel-group 1 mode active
+
+interface port-channel 1
+ description EtherChannel-to-SW1
+ switchport mode trunk
+ switchport trunk allowed vlan 10,20,30,99
+
+# Trunk Ports to Routers
+interface GigabitEthernet1/0/24
+ description Trunk-to-R1
+ switchport mode trunk
+ switchport trunk allowed vlan 10,20,30,99
+
+interface GigabitEthernet1/0/23
+ description Trunk-to-R2
+ switchport mode trunk
+ switchport trunk allowed vlan 10,20,30,99
+
+# Server Port
+interface GigabitEthernet1/0/7
+ description File-Server
+ switchport mode access
+ switchport access vlan 20
+ spanning-tree portfast
+ switchport port-security
+ switchport port-security maximum 1
+ switchport port-security mac-address sticky
+
+# HR Department Ports
+interface range GigabitEthernet1/0/10-12
+ description HR-PCs
+ switchport mode access
+ switchport access vlan 10
+ spanning-tree portfast
+ switchport port-security
+ switchport port-security maximum 2
+ switchport port-security mac-address sticky
+ switchport port-security violation restrict
+
+# IT Department Ports
+interface range GigabitEthernet1/0/15-17
+ description IT-PCs
+ switchport mode access
+ switchport access vlan 20
+ spanning-tree portfast
+ switchport port-security
+ switchport port-security maximum 2
+ switchport port-security mac-address sticky
+ switchport port-security violation restrict
+
+# Guest & Wireless Ports
+interface GigabitEthernet1/0/20
+ description Wireless-Access-Point
+ switchport mode access
+ switchport access vlan 30
+ spanning-tree portfast
+
+interface range GigabitEthernet1/0/21-22
+ description Guest-Devices
+ switchport mode access
+ switchport access vlan 30
+ spanning-tree portfast
+ switchport port-security
+ switchport port-security maximum 3
+
+# Spanning Tree (Secondary Root)
+spanning-tree vlan 10,20,30,99 root secondary
+
+# DHCP Snooping
+ip dhcp snooping
+ip dhcp snooping vlan 10,20,30
+interface range GigabitEthernet1/0/23-24
+ ip dhcp snooping trust
+interface port-channel 1
+ ip dhcp snooping trust
+
+# Dynamic ARP Inspection
+ip arp inspection vlan 10,20,30
+interface range GigabitEthernet1/0/23-24
+ ip arp inspection trust
+interface port-channel 1
+ ip arp inspection trust
+
+# IP Source Guard
+interface range GigabitEthernet1/0/10-22
+ ip verify source
+
+# SNMP & NTP
+snmp-server community public RO
+snmp-server location "Main-Switch-SW2"
+ntp server 192.168.99.1
+
+end
+write memory
+
+# ========================================
+# TROUBLESHOOTING COMMANDS
+# ========================================
+
+# Router Troubleshooting Commands:
+show standby brief
+show standby
+show ip route
+show ip route summary
+show ip nat translations
+show ip nat statistics
+show ip interface brief
+show interfaces trunk
+show ip dhcp binding
+show ip dhcp pool
+show ip dhcp conflict
+show access-lists
+show ip access-lists
+
+# Switch Troubleshooting Commands:
+show vlan brief
+show vlan
+show spanning-tree
+show spanning-tree brief
+show spanning-tree root
+show etherchannel summary
+show etherchannel load-balance
+show etherchannel port-channel
+show port-security
+show port-security interface gi1/0/10
+show ip dhcp snooping
+show ip dhcp snooping binding
+show ip arp inspection
+show ip arp inspection statistics
+show interfaces trunk
+show interfaces gi1/0/24 switchport
+
+# Basic Connectivity Tests:
+ping 192.168.10.1
+ping 192.168.20.1
+ping 192.168.30.1
+ping 203.0.113.1
+ping 8.8.8.1
+tracert 8.8.8.1
+nslookup intranet.local
+
+# ========================================
+# END OF CONFIGURATION FILE
+# ========================================
